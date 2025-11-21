@@ -21,28 +21,29 @@ const unsigned char music_scale[] = {
     178, // Fa
     158, // So
     141, // La
-    125  // Si
+    125,  // Si
+    10
 };
 
-void __interrupt(high_priority) RD2_ISR(void){
-    // Set pitch
-    PR2 = music_scale[state];
-    state += 1;
-    if (state == 7) state = 0;
-    
-    // The value of Duty cycle is half of PR2
-    CCPR1L = music_scale[state] >> 1;
-    /*
-    CCPR1L = (music_scale[state] >> 1) >> 2; 
-    CCP1CONbits.DC1B = (music_scale[state] >> 1) & 0b11
-    */
-    
-    // Turn on Timer2, start to make sound
-    T2CONbits.TMR2ON = 1; 
-    __delay_ms(500);
-    // Turn off Timer2, stop to make sound
-    T2CONbits.TMR2ON = 0;
-    
+const int song[] = {4, 2, 2, 7, 3, 1, 1, 7, 0, 1, 2, 3, 4, 4, 4};
+
+void __interrupt(high_priority) RB0_ISR(void){
+    for (int i = 0; i < sizeof(song)/sizeof(song[0]); i++){
+        // Set pitch
+        PR2 = music_scale[song[i]];
+        // The value of Duty cycle is half of PR2
+        CCPR1L = music_scale[state] >> 1;
+        /*
+        CCPR1L = (music_scale[state] >> 1) >> 2; 
+        CCP1CONbits.DC1B = (music_scale[state] >> 1) & 0b11
+        */
+        // Turn on Timer2, start to make sound
+        T2CONbits.TMR2ON = 1; 
+        __delay_ms(500);
+        // Turn off Timer2, stop to make sound
+        T2CONbits.TMR2ON = 0;
+        __delay_ms(100);
+    }
     INTCONbits.INT0IF = 0;
 }
 
