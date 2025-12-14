@@ -89,6 +89,7 @@ void startMusic(){
         T2CONbits.TMR2ON = 0;
         __delay_ms(50);
     }
+    __delay_ms(500)
     soundOp = 2;
 }
 
@@ -119,7 +120,7 @@ void eatMusic(){
 
 void warningMusic(){
     unsigned char sound, i, j;
-    for (j = 0; j < 2; j++){
+    for (j = 0; j < 3; j++){
         for (i = 0; i < 4; i++){
             sound = 10;
             PR2 = sound;
@@ -129,7 +130,7 @@ void warningMusic(){
             T2CONbits.TMR2ON = 0;
             __delay_ms(50);
         }
-        if (j == 0) __delay_ms(500);
+        if (j != 2) __delay_ms(500);
     }
     
     T2CONbits.TMR2ON = 0;
@@ -137,83 +138,118 @@ void warningMusic(){
 }
 
 void winMusic(){
-    unsigned char k, sound;
-    sound = 29;
-    PR2 = sound; CCPR1L = sound >> 1;
+    // ============================
+    // First part?pull the flag
+    // ============================
+    // ???G3, C4, E4, G4, C5, E5, G5, E6
+    unsigned char slide_notes[] = { 79, 59, 47, 39, 29, 23, 19, 11 };
+    unsigned char i;
+    
     T2CONbits.TMR2ON = 1;
-    __delay_ms(500);       
 
-    sound = 21;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1;  __delay_ms(200);
-    T2CONbits.TMR2ON = 0;  __delay_ms(100);
-    
-    sound = 21;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1;  __delay_ms(80);
-    T2CONbits.TMR2ON = 0;  __delay_ms(50);
-    
-    sound = 21;
-    PR2 = sound; CCPR1L = sound >> 1;  
-    T2CONbits.TMR2ON = 1; __delay_ms(450);
-    T2CONbits.TMR2ON = 0; __delay_ms(300);
-    //------------------------//
-    __delay_ms(200);
-    sound = 29;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1;  __delay_ms(500);       
-
-    sound = 19;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1; __delay_ms(200);
-    T2CONbits.TMR2ON = 0; __delay_ms(100);
-    
-    sound = 23;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1; __delay_ms(80);
-    T2CONbits.TMR2ON = 0; __delay_ms(70);
-    
-    sound = 21;
-    PR2 = sound;  CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1;  __delay_ms(450);
-    T2CONbits.TMR2ON = 0;  __delay_ms(300);
-    
+    // fast climbing
+    for(i=0; i<8; i++) {
+        PR2 = slide_notes[i];
+        CCPR1L = slide_notes[i] >> 1;
+        __delay_ms(80);
+    }
     T2CONbits.TMR2ON = 0;
+    
+    // typical stop(wait for count point)
+    __delay_ms(500); 
+
+    // ============================
+    // Second?Melody of victory (go into castle)
+    // ============================
+    // Melody?G#5 -> D#5 -> G#5 -> D#5 -> G#5 -> B5 (change) -> G5 -> E5 -> G5 -> C6 (high pitch Do!)
+    
+    // G#5(18), D#5(24), A#5(16), B5(15), G5(19), E5(23), C6(14)
+    unsigned char melody[] = { 
+        18, 24, 18, 24, 18,  // G# - D# - G# - D# - G#
+        16, 15,              // A# - B 
+        19, 23, 19,          // G - E - G
+        14                   // C6
+    };
+
+    unsigned int duration[] = {
+        120, 120, 120, 120, 120, 
+        120, 120,                
+        120, 120, 120,           
+        600                      
+    };
+
+    unsigned char k;
+    for(i=0; i<11; i++) {
+        k = melody[i];
+        PR2 = k;
+        CCPR1L = k >> 1;
+        
+        T2CONbits.TMR2ON = 1;
+        // To let sound clear, actual sound time shorter than waiting time
+        // "Gate Time" control
+        unsigned int play_time = duration[i] - 30; 
+
+        unsigned int t;
+        for(t=0; t < play_time/10; t++) __delay_ms(10);
+        
+        // Staccato
+        T2CONbits.TMR2ON = 0;
+        __delay_ms(30); 
+    }
     soundOp = 0;
 }
 
 void loseMusic(){
-    unsigned char sound = 200;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1; __delay_ms(100);
+    unsigned char notes[] = { 79, 83, 88, 94 };
+    unsigned char k;
+    unsigned char i;
+
+    // Wah-Wah-Wah
+    for(i=0; i<3; i++){
+        k = notes[i];
+        PR2 = k;
+        CCPR1L = k >> 1;
+        
+        T2CONbits.TMR2ON = 1;
+        __delay_ms(300);
+        
+        T2CONbits.TMR2ON = 0;
+        __delay_ms(100); 
+    }
     
-    T2CONbits.TMR2ON = 0;
-    __delay_ms(150);
+    // Waaaaaaaah....
+    k = notes[3]; // E3
+    PR2 = k;
+    CCPR1L = k >> 1;
     
-    sound = 180;
-    PR2 = sound; CCPR1L = sound >> 1;
-    T2CONbits.TMR2ON = 1; __delay_ms(1000);
-    
+    T2CONbits.TMR2ON = 1;
+    __delay_ms(1000); // ??? 1?
     T2CONbits.TMR2ON = 0;
     soundOp = 0;
 }
 
 void __interrupt(high_priority) Master_ISR(void){
     if (INTCONbits.INT0IF){
-        soundOp = 1;
+        if (soundOp == 0){
+            soundOp = 1;
+        }
         INTCONbits.INT0IF = 0;
     }else if (INTCON3bits.INT1IF){
-        if (LATBbits.LATB4 == 0){
-            soundOp = 3;
-        }else{
-            soundOp = 4;
+        if (soundOp == 2){
+            if (LATBbits.LATB4 == 0){
+                soundOp = 3;
+            }else{
+                soundOp = 4;
+            }
         }
         INTCON3bits.INT1IF = 0;
     }else if (INTCON3bits.INT2IF){
-        if (LATBbits.LATB5 == 0){
-            soundOp = 5;
-        }else{
-            soundOp = 6;
+        if (soundOp == 2){
+            if (LATBbits.LATB5 == 0){
+                soundOp = 5;
+            }else{
+                soundOp = 6;
+            }
         }
         INTCON3bits.INT2IF = 0;
     }
@@ -377,7 +413,7 @@ void main(void){
     TRISBbits.RB4 = 0b0;
     TRISBbits.RB5 = 0b0;
     LATBbits.LATB3 = 0b0;
-    LATBbits.LATB4 = 0b0;
+    LATBbits.LATB4 = 0b1;
     LATBbits.LATB5 = 0b0;
     
     while(1){
@@ -395,22 +431,3 @@ void main(void){
     }
     return;
 }
-
-
-
-
-/**
- const unsigned char notes[] = {19, 20, 24, 35, 37, 23, 18, 14 }; 
-    
-    T2CONbits.TMR2ON = 1;
-    unsigned char k;
-    for(k=0; k<8; k++) {
-        PR2 = notes[k];
-        CCPR1L = notes[k] >> 1;
-        
-        __delay_ms(100); 
-    }
-    
-    T2CONbits.TMR2ON = 0;
- * 
- * */
