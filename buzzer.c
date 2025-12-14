@@ -224,13 +224,67 @@ typedef struct {
     unsigned char duration; // 20: 200ms
 } Note;
 
-// Under 1MHz, PR2: Do(118), Re(105), Mi(94), Fa(88), So(79)
+
+
+
+// --- Octave 3  ---
+#define N_C3  118
+#define N_CS3 111
+#define N_D3  105
+#define N_DS3 99
+#define N_E3  94
+#define N_F3  88
+#define N_FS3 83
+#define N_G3  79
+#define N_GS3 74
+#define N_A3  70
+#define N_AS3 66
+#define N_B3  62
+
+// --- Octave 4  ---
+#define N_C4  59
+#define N_CS4 55
+#define N_D4  52
+#define N_DS4 49
+#define N_E4  47
+#define N_F4  44
+#define N_FS4 41
+#define N_G4  39
+#define N_GS4 37
+#define N_A4  35
+#define N_AS4 33
+#define N_B4  31
+
+// --- Octave 5  ---
+#define N_C5  29
+#define N_D5  26
+#define N_E5  23
+#define N_F5  22
+#define N_G5  19
+#define N_A5  17
+
+#define REST  0  // stop
 const Note bgm_song[] = {
-    {118, 200}, {105, 200}, {94, 200}, {118, 200}, // Do Re Mi Do
-    {118, 1000}, {105, 1000}, {94, 200}, {118, 200}, // Do Re Mi Do
-    {94, 200},  {88, 200},  {79, 200},            // Mi Fa So~
-    {94, 200},  {88, 200},  {79, 200},            // Mi Fa So~
-    {0, 0}                                     // stop symbol
+   // Phrase 1: E5 -> B4 -> C5 -> D5 -> C5 -> B4 -> A4
+    // === Part A (main melody) ===
+    {N_E5, 40}, {N_B4, 20}, {N_C5, 20}, {N_D5, 40}, {N_C5, 20}, {N_B4, 20}, // Mi Si Do Re Do Si
+    {N_A4, 40}, {N_A4, 20}, {N_C5, 20}, {N_E5, 40}, {N_D5, 20}, {N_C5, 20}, // La La Do Mi Re Do
+    {N_B4, 60}, {N_C5, 20}, {N_D5, 40}, {N_E5, 40},                         // Si Do Re Mi
+    {N_C5, 40}, {N_A4, 40}, {N_A4, 40}, {REST, 20},                         // Do La La (?)
+    
+    // repeat 
+    {N_D5, 60}, {N_F5, 20}, {N_A5, 40}, {N_G5, 20}, {N_F5, 20},             // Re Fa La So Fa
+    {N_E5, 60}, {N_C5, 20}, {N_E5, 40}, {N_D5, 20}, {N_C5, 20},             // Mi Do Mi Re Do
+    {N_B4, 40}, {N_B4, 20}, {N_C5, 20}, {N_D5, 40}, {N_E5, 40},             // Si Si Do Re Mi
+    {N_C5, 40}, {N_A4, 40}, {N_A4, 40}, {REST, 40},                         // Do La La
+
+    // === Part B (more lower pith) ===
+    {N_E4, 80}, {N_C4, 80}, {N_D4, 80}, {N_B3, 80}, // Mi... Do... Re... Si...
+    {N_C4, 80}, {N_A3, 80}, {N_GS3, 80}, {N_B3, 80}, // Do... La... G#... Si...
+    {N_E4, 80}, {N_C4, 80}, {N_D4, 80}, {N_B3, 80}, // Mi... Do... Re... Si...
+    {N_C4, 40}, {N_E4, 40}, {N_A4, 40}, {N_A4, 40}, {REST, 100}, // Do Mi La La!
+
+    {0, 0} // Finish (loop)
 };
 
 volatile unsigned char noteIndex = 0;
@@ -256,7 +310,7 @@ void __interrupt(low_priority) Timer1_ISR(void){
                     T2CONbits.TMR2ON = 0;
                 }else {
                     PR2 = p;
-                    CCPR1L = p / 8;
+                    CCPR1L = p;
                     T2CONbits.TMR2ON = 1;
                 }
                 
@@ -316,18 +370,6 @@ void main(void){
     TRISBbits.RB5 = 0b1;
     */
     
-    /*// test
-    startMusic();
-    __delay_ms(2000);
-    eatMusic();
-    __delay_ms(2000);
-    warningMusic();
-    __delay_ms(2000);
-    winMusic();
-    __delay_ms(2000);
-    loseMusic();
-    __delay_ms(2000);
-    */
     
     
     // test
