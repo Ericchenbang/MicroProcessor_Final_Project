@@ -89,7 +89,7 @@ void startMusic(){
         T2CONbits.TMR2ON = 0;
         __delay_ms(50);
     }
-    __delay_ms(500)
+    __delay_ms(500);
     soundOp = 2;
 }
 
@@ -228,19 +228,27 @@ void loseMusic(){
     soundOp = 0;
 }
 
+volatile unsigned char noteIndex = 0;
+volatile unsigned char noteTime = 0;
+volatile unsigned int totalTime = 0;
+
 void __interrupt(high_priority) Master_ISR(void){
     if (INTCONbits.INT0IF){
         if (soundOp == 0){
             soundOp = 1;
+            noteIndex = 0;
+            noteTime = 0;
+            totalTime = 0;
         }
         INTCONbits.INT0IF = 0;
     }else if (INTCON3bits.INT1IF){
         if (soundOp == 2){
-            if (LATBbits.LATB4 == 0){
+            soundOp = 3;
+            /*if (LATBbits.LATB3 == 0){
                 soundOp = 3;
             }else{
                 soundOp = 4;
-            }
+            }*/
         }
         INTCON3bits.INT1IF = 0;
     }else if (INTCON3bits.INT2IF){
@@ -323,8 +331,9 @@ const Note bgm_song[] = {
     {0, 0} // Finish (loop)
 };
 
-volatile unsigned char noteIndex = 0;
-volatile unsigned char noteTime = 0;
+
+const unsigned int WarningTime = 3000;
+const unsigned int EndTime = 6000;
 
 void __interrupt(low_priority) Timer1_ISR(void){
     if (PIR1bits.TMR1IF) {
@@ -332,6 +341,14 @@ void __interrupt(low_priority) Timer1_ISR(void){
         TMR1L = (63036 & 0xFF);
         
         if (soundOp == 2) {
+            totalTime += 1;
+            if (totalTime == WarningTime){
+                soundOp = 4;
+            }else if (totalTime == EndTime){
+                soundOp = 5;
+                totalTime = 0;
+            }
+            
             if (noteTime == 0) {
                 unsigned char p = bgm_song[noteIndex].pr2_val;
                 unsigned char d = bgm_song[noteIndex].duration;
@@ -346,7 +363,7 @@ void __interrupt(low_priority) Timer1_ISR(void){
                     T2CONbits.TMR2ON = 0;
                 }else {
                     PR2 = p;
-                    CCPR1L = p;
+                    CCPR1L = p/2;
                     T2CONbits.TMR2ON = 1;
                 }
                 
@@ -400,22 +417,20 @@ void main(void){
     INTCON2bits.INTEDG2 = 1; 
     TRISBbits.RB2 = 0b1;
     
+    
+    //TRISBbits.RB3 = 0b1;
+    //TRISBbits.RB4 = 0b0;
+    //TRISBbits.RB5 = 0b1;                                                                                                                                                
+    
     /*
-    TRISBbits.RB3 = 0b1;
-    TRISBbits.RB4 = 0b1;
-    TRISBbits.RB5 = 0b1;
-    */
-    
-    
-    
     // test
     TRISBbits.RB3 = 0b0;
     TRISBbits.RB4 = 0b0;
     TRISBbits.RB5 = 0b0;
     LATBbits.LATB3 = 0b0;
-    LATBbits.LATB4 = 0b1;
+    LATBbits.LATB4 = 0b0;
     LATBbits.LATB5 = 0b0;
-    
+    */
     while(1){
         if (soundOp == 1){
             startMusic();
