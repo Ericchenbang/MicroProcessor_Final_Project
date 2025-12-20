@@ -72,8 +72,13 @@ const unsigned char music_scale[] = {
 #define LOSE 6
 
 volatile unsigned int soundOp = 0;
+volatile int score = 0; 
 const int bgm[];
 volatile int bgmIndex;
+volatile unsigned int totalTime = 0;
+volatile unsigned int hasWarning = 0;
+const unsigned int WarningTime = 7000;
+const unsigned int EndTime = 8900;
 
 void startMusic(){
     unsigned char notes[] = {15, 18, 23, 18, 11 }; 
@@ -91,6 +96,8 @@ void startMusic(){
     }
     __delay_ms(500);
     soundOp = 2;
+    hasWarning = 0;
+    totalTime = 160;
 }
 
 // mario coin sound
@@ -115,12 +122,14 @@ void eatMusic(){
 
     T2CONbits.TMR2ON = 0;
     OSCCONbits.IRCF = 0b100;
+    score += 1;
     soundOp = 2;
+    totalTime += 34;
 }
 
 void warningMusic(){
     unsigned char sound, i, j;
-    for (j = 0; j < 3; j++){
+    for (j = 0; j < 2; j++){
         for (i = 0; i < 4; i++){
             sound = 10;
             PR2 = sound;
@@ -130,11 +139,14 @@ void warningMusic(){
             T2CONbits.TMR2ON = 0;
             __delay_ms(50);
         }
-        if (j != 2) __delay_ms(500);
+        if (j != 1) __delay_ms(500);
     }
     
     T2CONbits.TMR2ON = 0;
     soundOp = 2;
+    totalTime += 130;
+    hasWarning = 1;
+    if (totalTime >= EndTime) soundOp = 5;
 }
 
 void winMusic(){
@@ -230,7 +242,6 @@ void loseMusic(){
 
 volatile unsigned char noteIndex = 0;
 volatile unsigned char noteTime = 0;
-volatile unsigned int totalTime = 0;
 
 void __interrupt(high_priority) Master_ISR(void){
     if (INTCONbits.INT0IF){
@@ -238,7 +249,7 @@ void __interrupt(high_priority) Master_ISR(void){
             soundOp = 1;
             noteIndex = 0;
             noteTime = 0;
-            totalTime = 0;
+            score = 0;
         }
         INTCONbits.INT0IF = 0;
     }else if (INTCON3bits.INT1IF){
@@ -253,12 +264,14 @@ void __interrupt(high_priority) Master_ISR(void){
         INTCON3bits.INT1IF = 0;
     }else if (INTCON3bits.INT2IF){
         if (soundOp == 2){
+            soundOp = 6;
+            /*
             if (LATBbits.LATB5 == 0){
                 soundOp = 5;
             }else{
                 soundOp = 6;
-            }
-        }
+            }*/
+        } 
         INTCON3bits.INT2IF = 0;
     }
 }
@@ -267,8 +280,6 @@ typedef struct {
     unsigned char pr2_val; // pitch (0: stop)
     unsigned char duration; // 20: 200ms
 } Note;
-
-
 
 
 // --- Octave 3  ---
@@ -332,8 +343,6 @@ const Note bgm_song[] = {
 };
 
 
-const unsigned int WarningTime = 3000;
-const unsigned int EndTime = 6000;
 
 void __interrupt(low_priority) Timer1_ISR(void){
     if (PIR1bits.TMR1IF) {
@@ -342,11 +351,10 @@ void __interrupt(low_priority) Timer1_ISR(void){
         
         if (soundOp == 2) {
             totalTime += 1;
-            if (totalTime == WarningTime){
-                soundOp = 4;
-            }else if (totalTime == EndTime){
+            if (totalTime >= EndTime){
                 soundOp = 5;
-                totalTime = 0;
+            }else if (totalTime >= WarningTime && hasWarning == 0){
+                soundOp = 4;
             }
             
             if (noteTime == 0) {
@@ -418,19 +426,16 @@ void main(void){
     TRISBbits.RB2 = 0b1;
     
     
-    //TRISBbits.RB3 = 0b1;
-    //TRISBbits.RB4 = 0b0;
-    //TRISBbits.RB5 = 0b1;                                                                                                                                                
+    // seven
+    TRISA = 0;
     
-    /*
-    // test
-    TRISBbits.RB3 = 0b0;
-    TRISBbits.RB4 = 0b0;
-    TRISBbits.RB5 = 0b0;
-    LATBbits.LATB3 = 0b0;
-    LATBbits.LATB4 = 0b0;
-    LATBbits.LATB5 = 0b0;
-    */
+    TRISDbits.TRISD0 = 0;
+    TRISDbits.TRISD1 = 0;
+    
+    LATA |= 0xFE;
+    LATDbits.LATD0 = 0;
+    LATDbits.LATD1 = 0;
+    
     while(1){
         if (soundOp == 1){
             startMusic();
@@ -440,9 +445,13 @@ void main(void){
             warningMusic();
         }else if (soundOp == 5){
             winMusic();
-        }else if (soundOp == 6){
+                                                                                                                                                                                                                                                                        }else if (soundOp == 6){
             loseMusic();
         }
     }
     return;
 }
+
+
+
+
